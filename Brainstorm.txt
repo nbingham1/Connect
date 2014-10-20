@@ -1,0 +1,23 @@
+indoor location different classrooms, push class related stuff to phone.
+recommendation on travel locations/products
+
+something to record location data
+google now/tourist/sight?
+bringing together people who do the same things
+bringing together friends who are in the same vicinity
+bringing together who work in the same general fields of study
+
+people who come from the same country gather to share food
+people who go to the same restaurants
+
+location
+accelerometer
+clock
+apps they have in common
+facebook api -- completing the strong triangle in a social network
+
+============================================================================
+
+Match people with new connections, products, places, and activities using patterns in interests derived from movement.
+
+
