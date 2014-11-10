@@ -28,6 +28,8 @@ import com.facebook.widget.LoginButton;
 import com.facebook.widget.LoginButton.UserInfoChangedCallback;
 import com.google.gson.Gson;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.io.BufferedReader;
@@ -94,20 +96,20 @@ public class LoginActivity extends Activity {
             }
         });
 
-//        try { // if hash key doesn't work!
-//            PackageInfo info = getPackageManager().getPackageInfo(
-//                    "mobilesystems.connect",
-//                    PackageManager.GET_SIGNATURES);
-//            for (Signature signature : info.signatures) {
-//                MessageDigest md = MessageDigest.getInstance("SHA");
-//                md.update(signature.toByteArray());
-//                Log.i("KeyHash:", Base64.encodeToString(md.digest(), Base64.DEFAULT));
-//            }
-//        } catch (PackageManager.NameNotFoundException e) {
-//
-//        } catch (NoSuchAlgorithmException e) {
-//
-//        }
+        try { // if hash key doesn't work!
+            PackageInfo info = getPackageManager().getPackageInfo(
+                    "mobilesystems.connect",
+                    PackageManager.GET_SIGNATURES);
+            for (Signature signature : info.signatures) {
+                MessageDigest md = MessageDigest.getInstance("SHA");
+                md.update(signature.toByteArray());
+                Log.i("KeyHash:", Base64.encodeToString(md.digest(), Base64.DEFAULT));
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+
+        } catch (NoSuchAlgorithmException e) {
+
+        }
     }
 
     private Session.StatusCallback statusCallback = new Session.StatusCallback() {
@@ -177,6 +179,21 @@ public class LoginActivity extends Activity {
         uiHelper.onSaveInstanceState(savedState);
     }
 
+    /*
+        access redirect_url
+        refresh refresh_token
+        validate access_token
+        profile access_token
+        support access_token
+        activities date_kind access_token {...}
+        places date_kind access_token {...}
+        storyline date_kind access_token {...}
+
+        date_kind:
+            date -> date
+            range -> from to
+            count -> count
+     */
     public class MovesAPI extends AsyncTask<String, Void, String> {
         String cmd = "";
 
@@ -191,17 +208,17 @@ public class LoginActivity extends Activity {
             } else if (cmds[0].equalsIgnoreCase("validate")) {
                 url = "https://api.moves-app.com/oauth/v1/tokeninfo?access_token=" + cmds[1];
             } else if (cmds[0].equalsIgnoreCase("profile")) {
-                url += "/user/profile";
+                url += "/user/profile?access_token=" + cmds[1];
             } else if (cmds[0].equalsIgnoreCase("support")) {
-                url += "/activities";
+                url += "/activities?access_tokens=" + cmds[1];
             } else {
                 url += "/user/" + cmds[0] + "/daily";
                 if (cmds[1].equalsIgnoreCase("date")) {
-                    url += "/" + cmds[2];
+                    url += "/" + cmds[3] + "?access_token=" + cmds[2];
                 } else if (cmds[1].equalsIgnoreCase("range")) {
-                    url += "?from=" + cmds[2] + "&to=" + cmds[3];
+                    url += "?access_token=" + cmds[2] + "&from=" + cmds[3] + "&to=" + cmds[4];
                 } else if (cmds[1].equalsIgnoreCase("count")) {
-                    url += "?pastDays=" + cmds[2];
+                    url += "?access_token=" + cmds[2] + "&pastDays=" + cmds[3];
                 }
             }
 
@@ -247,22 +264,23 @@ public class LoginActivity extends Activity {
             Gson gson = new Gson();
             accessToken = gson.fromJson(token, MovesAccessToken.class);
             Toast.makeText(LoginActivity.this, "Moves Authenticated", Toast.LENGTH_SHORT).show();
+            new MovesAPI().execute("places", "count", accessToken.access_token, "2");
         } else if (cmd.equalsIgnoreCase("refresh")) {
-
+            Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else if (cmd.equalsIgnoreCase("validate")) {
-
+            Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else if (cmd.equalsIgnoreCase("profile")) {
-
+            Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else if (cmd.equalsIgnoreCase("support")) {
-
+            Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else if (cmd.equalsIgnoreCase("summary")) {
-
+            Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else if (cmd.equalsIgnoreCase("activities")) {
-
+            Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else if (cmd.equalsIgnoreCase("places")) {
-
+            Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else if (cmd.equalsIgnoreCase("storyline")) {
-
+            Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else {
             Toast.makeText(LoginActivity.this, "Unrecognized Moves command '" + cmd + "'", Toast.LENGTH_SHORT).show();
         }
