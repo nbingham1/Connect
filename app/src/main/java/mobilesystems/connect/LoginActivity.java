@@ -28,31 +28,19 @@ import com.facebook.widget.LoginButton;
 import com.facebook.widget.LoginButton.UserInfoChangedCallback;
 import com.google.gson.Gson;
 
-import java.io.FileNotFoundException;
-import java.net.URI;
-import java.net.URL;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONException;
-import org.json.JSONObject;
-import android.util.Log;
 import org.apache.http.client.methods.HttpGet;
 
 /**
@@ -71,7 +59,6 @@ public class LoginActivity extends Activity {
     private static final String CLIENT_ID = "BHJJXLewp3VFBhgOY1T7NVlyXGsOtMF1";
     private static final String REDIRECT_URI = "http://www.sol-union.com/moves/auth.php";
     private static final int REQUEST_AUTHORIZE = 1;
-    private static final int RECEIVE_AUTHORIZE = 2;
 
     public class MovesAccessToken {
         MovesAccessToken() {}
@@ -176,17 +163,10 @@ public class LoginActivity extends Activity {
         switch (requestCode) {
             case REQUEST_AUTHORIZE:
                 Uri resultUri = data.getData();
-                if (resultCode == RESULT_OK) {
-                    doReceiveAuthInApp(resultUri);
-                }
-                Toast.makeText(this,
-                        (resultCode == RESULT_OK ? "Authorized: " : "Failed: ")
-                                + data.getDataString(), Toast.LENGTH_LONG).show();
-                break;
-            case RECEIVE_AUTHORIZE:
-                Toast.makeText(this,
-                        (resultCode == RESULT_OK ? "Authorized: " : "Failed: ")
-                                + data.getDataString(), Toast.LENGTH_LONG).show();
+                if (resultCode == RESULT_OK)
+                    new MovesAPI().execute("access", resultUri.toString());
+                else
+                    Toast.makeText(this, "Moves denied access", Toast.LENGTH_SHORT).show();
                 break;
         }
     }
@@ -197,29 +177,36 @@ public class LoginActivity extends Activity {
         uiHelper.onSaveInstanceState(savedState);
     }
 
-    /**
-     * App-to-app. Creates an intent with data uri starting moves://app/authorize/xxx (for more
-     * details, see documentation link below) to be handled by Moves app. When Moves receives this
-     * Intent it opens up a dialog asking for user to accept the requested permission for your app.
-     * The result of this user interaction is delivered to
-     * {@link #onActivityResult(int, int, android.content.Intent) }
-     *
-     * @see https://dev.moves-app.com/docs/api
-     */
-    private void doRequestAuthInApp() {
-        Uri uri = createAuthUri("moves", "app", "/authorize").build();
-        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        try {
-            startActivityForResult(intent, REQUEST_AUTHORIZE);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "Moves app not installed", Toast.LENGTH_SHORT).show();
-        }
-    }
+    public class MovesAPI extends AsyncTask<String, Void, String> {
+        String cmd = "";
 
-    private class GetHTTP extends AsyncTask<Uri, Void, String> {
-        protected String doInBackground(Uri... urls) {
+        protected String doInBackground(String... cmds) {
+            cmd = cmds[0];
+
+            String url = "https://api.moves-app.com/api/1.1";
+            if (cmds[0].equalsIgnoreCase("access")) {
+                url = cmds[1];
+            } else if (cmds[0].equalsIgnoreCase("refresh")) {
+                url = REDIRECT_URI + "?refresh_token=" + cmds[1];
+            } else if (cmds[0].equalsIgnoreCase("validate")) {
+                url = "https://api.moves-app.com/oauth/v1/tokeninfo?access_token=" + cmds[1];
+            } else if (cmds[0].equalsIgnoreCase("profile")) {
+                url += "/user/profile";
+            } else if (cmds[0].equalsIgnoreCase("support")) {
+                url += "/activities";
+            } else {
+                url += "/user/" + cmds[0] + "/daily";
+                if (cmds[1].equalsIgnoreCase("date")) {
+                    url += "/" + cmds[2];
+                } else if (cmds[1].equalsIgnoreCase("range")) {
+                    url += "?from=" + cmds[2] + "&to=" + cmds[3];
+                } else if (cmds[1].equalsIgnoreCase("count")) {
+                    url += "?pastDays=" + cmds[2];
+                }
+            }
+
             DefaultHttpClient httpClient = new DefaultHttpClient();
-            HttpGet httpGet = new HttpGet(urls[0].toString());
+            HttpGet httpGet = new HttpGet(url);
             StringBuilder builder = new StringBuilder();
 
             try {
@@ -237,7 +224,7 @@ public class LoginActivity extends Activity {
                         builder.append(line);
                     return builder.toString();
                 } else
-                    Log.e("Getter", "Failed get address");
+                    Log.e("MovesAPI", "HTTP failed with status code " + Integer.toString(statusCode));
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             } catch (ClientProtocolException e) {
@@ -251,36 +238,52 @@ public class LoginActivity extends Activity {
 
         @Override
         protected void onPostExecute(String result) {
-            LoginActivity.this.doReceiveTokenInApp(result);
+            LoginActivity.this.doReceiveMoves(cmd, result);
         }
     }
 
-    private void doReceiveAuthInApp(Uri uri) {
-        new GetHTTP().execute(uri);
-    }
+    private void doReceiveMoves(String cmd, String token) {
+        if (cmd.equalsIgnoreCase("access")) {
+            Gson gson = new Gson();
+            accessToken = gson.fromJson(token, MovesAccessToken.class);
+            Toast.makeText(LoginActivity.this, "Moves Authenticated", Toast.LENGTH_SHORT).show();
+        } else if (cmd.equalsIgnoreCase("refresh")) {
 
-    private void doReceiveTokenInApp(String token) {
-        Gson gson = new Gson();
-        accessToken = gson.fromJson(token, MovesAccessToken.class);
-        Toast.makeText(LoginActivity.this, accessToken.access_token, Toast.LENGTH_SHORT).show();
-    }
+        } else if (cmd.equalsIgnoreCase("validate")) {
 
-    /**
-     * Helper method for building a valid Moves authorize uri.
-     */
-    private Uri.Builder createAuthUri(String scheme, String authority, String path) {
-        return new Uri.Builder()
-                .scheme(scheme)
-                .authority(authority)
-                .path(path)
-                .appendQueryParameter("client_id", CLIENT_ID)
-                .appendQueryParameter("redirect_uri", REDIRECT_URI)
-                .appendQueryParameter("scope", "location activity")
-                .appendQueryParameter("state", String.valueOf(SystemClock.uptimeMillis()));
+        } else if (cmd.equalsIgnoreCase("profile")) {
+
+        } else if (cmd.equalsIgnoreCase("support")) {
+
+        } else if (cmd.equalsIgnoreCase("summary")) {
+
+        } else if (cmd.equalsIgnoreCase("activities")) {
+
+        } else if (cmd.equalsIgnoreCase("places")) {
+
+        } else if (cmd.equalsIgnoreCase("storyline")) {
+
+        } else {
+            Toast.makeText(LoginActivity.this, "Unrecognized Moves command '" + cmd + "'", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void connectMoves(View view) {
-        doRequestAuthInApp();
+        Uri uri = new Uri.Builder()
+                .scheme("moves")
+                .authority("app")
+                .path("/authorize")
+                .appendQueryParameter("client_id", CLIENT_ID)
+                .appendQueryParameter("redirect_uri", REDIRECT_URI)
+                .appendQueryParameter("scope", "location activity")
+                .appendQueryParameter("state", String.valueOf(SystemClock.uptimeMillis())).build();
+
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        try {
+            startActivityForResult(intent, REQUEST_AUTHORIZE);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "Please install the Moves app", Toast.LENGTH_SHORT).show();
+        }
     }
 
 }
