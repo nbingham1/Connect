@@ -27,7 +27,10 @@ import com.facebook.model.GraphUser;
 import com.facebook.widget.LoginButton;
 import com.facebook.widget.LoginButton.UserInfoChangedCallback;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.stream.JsonReader;
 
+import java.io.StringReader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -45,10 +48,13 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.client.methods.HttpGet;
 
+import mobilesystems.connect.utils.MovesAPI;
+import mobilesystems.connect.utils.MovesAccess;
+
 /**
  * Created by yellow on 11/5/14.
  */
-public class LoginActivity extends Activity {
+public class LoginActivity extends Activity implements MovesAccess{
     private LoginButton loginBtn;
     private TextView userName;
 
@@ -56,33 +62,19 @@ public class LoginActivity extends Activity {
     private static final List<String> PERMISSIONS = Arrays.asList("publish_actions");
 
     // Moves
-
-    private static final String TAG = "Connect";
-    private static final String CLIENT_ID = "BHJJXLewp3VFBhgOY1T7NVlyXGsOtMF1";
-    private static final String REDIRECT_URI = "http://www.sol-union.com/moves/auth.php";
     private static final int REQUEST_AUTHORIZE = 1;
-
-    public class MovesAccessToken {
-        MovesAccessToken() {}
-
-        String access_token;
-        String token_type;
-        long expires_in;
-        String refresh_token;
-        String user_id;
-    }
-
-    MovesAccessToken accessToken = null;
+    MovesAPI.MovesAccessToken accessToken = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        /*******************
+         * Facebook Connect
+         *******************/
 
+        super.onCreate(savedInstanceState);
         uiHelper = new UiLifecycleHelper(this, statusCallback);
         uiHelper.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_profile);
-
         userName = (TextView) findViewById(R.id.user_name);
         loginBtn = (LoginButton) findViewById(R.id.fb_login_button);
         loginBtn.setUserInfoChangedCallback(new UserInfoChangedCallback() {
@@ -124,21 +116,6 @@ public class LoginActivity extends Activity {
         }
     };
 
-    public boolean checkPermissions() {
-        Session s = Session.getActiveSession();
-        if (s != null) {
-            return s.getPermissions().contains("publish_actions");
-        } else
-            return false;
-    }
-
-    public void requestPermissions() {
-        Session s = Session.getActiveSession();
-        if (s != null)
-            s.requestNewPublishPermissions(new Session.NewPermissionsRequest(
-                    this, PERMISSIONS));
-    }
-
     @Override
     public void onResume() {
         super.onResume();
@@ -162,11 +139,16 @@ public class LoginActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         uiHelper.onActivityResult(requestCode, resultCode, data);
 
+        /*******************************************************
+         * Results for Intents...
+         *
+         * 1. REQUEST_AUTHORIZE: Moves API Request authorized
+         *******************************************************/
         switch (requestCode) {
             case REQUEST_AUTHORIZE:
                 Uri resultUri = data.getData();
                 if (resultCode == RESULT_OK)
-                    new MovesAPI().execute("access", resultUri.toString());
+                    new MovesAPI(this).execute("access", resultUri.toString());
                 else
                     Toast.makeText(this, "Moves denied access", Toast.LENGTH_SHORT).show();
                 break;
@@ -179,92 +161,16 @@ public class LoginActivity extends Activity {
         uiHelper.onSaveInstanceState(savedState);
     }
 
-    /*
-        access redirect_url
-        refresh refresh_token
-        validate access_token
-        profile access_token
-        support access_token
-        activities date_kind access_token {...}
-        places date_kind access_token {...}
-        storyline date_kind access_token {...}
-
-        date_kind:
-            date -> date
-            range -> from to
-            count -> count
-     */
-    public class MovesAPI extends AsyncTask<String, Void, String> {
-        String cmd = "";
-
-        protected String doInBackground(String... cmds) {
-            cmd = cmds[0];
-
-            String url = "https://api.moves-app.com/api/1.1";
-            if (cmds[0].equalsIgnoreCase("access")) {
-                url = cmds[1];
-            } else if (cmds[0].equalsIgnoreCase("refresh")) {
-                url = REDIRECT_URI + "?refresh_token=" + cmds[1];
-            } else if (cmds[0].equalsIgnoreCase("validate")) {
-                url = "https://api.moves-app.com/oauth/v1/tokeninfo?access_token=" + cmds[1];
-            } else if (cmds[0].equalsIgnoreCase("profile")) {
-                url += "/user/profile?access_token=" + cmds[1];
-            } else if (cmds[0].equalsIgnoreCase("support")) {
-                url += "/activities?access_tokens=" + cmds[1];
-            } else {
-                url += "/user/" + cmds[0] + "/daily";
-                if (cmds[1].equalsIgnoreCase("date")) {
-                    url += "/" + cmds[3] + "?access_token=" + cmds[2];
-                } else if (cmds[1].equalsIgnoreCase("range")) {
-                    url += "?access_token=" + cmds[2] + "&from=" + cmds[3] + "&to=" + cmds[4];
-                } else if (cmds[1].equalsIgnoreCase("count")) {
-                    url += "?access_token=" + cmds[2] + "&pastDays=" + cmds[3];
-                }
-            }
-
-            DefaultHttpClient httpClient = new DefaultHttpClient();
-            HttpGet httpGet = new HttpGet(url);
-            StringBuilder builder = new StringBuilder();
-
-            try {
-                // defaultHttpClient
-                HttpResponse response = httpClient.execute(httpGet);
-                StatusLine statusLine = response.getStatusLine();
-                int statusCode = statusLine.getStatusCode();
-                if (statusCode == 200) {
-                    HttpEntity entity = response.getEntity();
-                    InputStream content = entity.getContent();
-                    BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(content));
-                    String line;
-                    while ((line = reader.readLine()) != null)
-                        builder.append(line);
-                    return builder.toString();
-                } else
-                    Log.e("MovesAPI", "HTTP failed with status code " + Integer.toString(statusCode));
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            } catch (ClientProtocolException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            LoginActivity.this.doReceiveMoves(cmd, result);
-        }
-    }
-
-    private void doReceiveMoves(String cmd, String token) {
+    /*******************************************************
+     * Method called after the MovesAPI has been executed.
+     * See MovesAPI:java
+     *******************************************************/
+    public void doReceiveMoves(String cmd, String token) {
         if (cmd.equalsIgnoreCase("access")) {
             Gson gson = new Gson();
-            accessToken = gson.fromJson(token, MovesAccessToken.class);
+            accessToken = gson.fromJson(token, MovesAPI.MovesAccessToken.class);
             Toast.makeText(LoginActivity.this, "Moves Authenticated", Toast.LENGTH_SHORT).show();
-            new MovesAPI().execute("places", "count", accessToken.access_token, "2");
+            new MovesAPI(this).execute("places", "count", accessToken.access_token, "2");
         } else if (cmd.equalsIgnoreCase("refresh")) {
             Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else if (cmd.equalsIgnoreCase("validate")) {
@@ -286,13 +192,18 @@ public class LoginActivity extends Activity {
         }
     }
 
+    /***************************************
+     * Function Called when the user clicks
+     * the Connect to Moves Button
+     ***************************************/
     public void connectMoves(View view) {
+
         Uri uri = new Uri.Builder()
                 .scheme("moves")
                 .authority("app")
                 .path("/authorize")
-                .appendQueryParameter("client_id", CLIENT_ID)
-                .appendQueryParameter("redirect_uri", REDIRECT_URI)
+                .appendQueryParameter("client_id", MovesAPI.CLIENT_ID)
+                .appendQueryParameter("redirect_uri", MovesAPI.REDIRECT_URI)
                 .appendQueryParameter("scope", "location activity")
                 .appendQueryParameter("state", String.valueOf(SystemClock.uptimeMillis())).build();
 
