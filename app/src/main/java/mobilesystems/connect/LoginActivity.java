@@ -1,11 +1,19 @@
 package mobilesystems.connect;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.location.Location;
+import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -33,6 +41,7 @@ import com.google.gson.stream.JsonReader;
 import java.io.StringReader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.io.BufferedReader;
@@ -48,15 +57,24 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.client.methods.HttpGet;
 
+import mobilesystems.connect.utils.AlarmReceiver;
+import mobilesystems.connect.utils.HttpRequestResult;
+import mobilesystems.connect.utils.HttpRequests;
 import mobilesystems.connect.utils.MovesAPI;
 import mobilesystems.connect.utils.MovesAccess;
+import mobilesystems.connect.utils.ValuePair;
 
 /**
  * Created by yellow on 11/5/14.
  */
 public class LoginActivity extends Activity implements MovesAccess{
+
+
+
     private LoginButton loginBtn;
     private TextView userName;
+
+
 
     private UiLifecycleHelper uiHelper;
     private static final List<String> PERMISSIONS = Arrays.asList("publish_actions");
@@ -64,6 +82,11 @@ public class LoginActivity extends Activity implements MovesAccess{
     // Moves
     private static final int REQUEST_AUTHORIZE = 1;
     MovesAPI.MovesAccessToken accessToken = null;
+
+    public static String userID;
+
+
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -167,8 +190,18 @@ public class LoginActivity extends Activity implements MovesAccess{
      *******************************************************/
     public void doReceiveMoves(String cmd, String token) {
         if (cmd.equalsIgnoreCase("access")) {
+
             Gson gson = new Gson();
             accessToken = gson.fromJson(token, MovesAPI.MovesAccessToken.class);
+
+            userID = accessToken.user_id;
+
+            AlarmManager alarmManager=(AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+            Intent intent = new Intent(getApplicationContext(), AlarmReceiver.class);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, intent, 0);
+            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP,System.currentTimeMillis(),600000,
+                    pendingIntent);
+
             Toast.makeText(LoginActivity.this, "Moves Authenticated", Toast.LENGTH_SHORT).show();
             new MovesAPI(this).execute("places", "count", accessToken.access_token, "2");
         } else if (cmd.equalsIgnoreCase("refresh")) {
@@ -214,5 +247,10 @@ public class LoginActivity extends Activity implements MovesAccess{
             Toast.makeText(this, "Please install the Moves app", Toast.LENGTH_SHORT).show();
         }
     }
+
+
+
+
+
 
 }
