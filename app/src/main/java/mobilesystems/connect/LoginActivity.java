@@ -32,6 +32,7 @@ import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.UiLifecycleHelper;
 import com.facebook.model.GraphUser;
+import com.facebook.widget.FriendPickerFragment;
 import com.facebook.widget.LoginButton;
 import com.facebook.widget.LoginButton.UserInfoChangedCallback;
 import com.google.gson.Gson;
@@ -70,11 +71,10 @@ import mobilesystems.connect.utils.ValuePair;
 public class LoginActivity extends Activity implements MovesAccess{
 
 
-
+    private static final String URL_FRIENDS =  "http://connect.sol-union.com/friends.py";
     private LoginButton loginBtn;
     private TextView userName;
-
-
+    private Session my_session;
 
     private UiLifecycleHelper uiHelper;
     private static final List<String> PERMISSIONS = Arrays.asList("publish_actions");
@@ -83,7 +83,15 @@ public class LoginActivity extends Activity implements MovesAccess{
     private static final int REQUEST_AUTHORIZE = 1;
     MovesAPI.MovesAccessToken accessToken = null;
 
-    public static String userID;
+    public static String userID = "";
+
+    private HttpRequestResult listener = new HttpRequestResult() {
+        @Override
+        public void HttpRequestResult(String result) {
+            Log.d("HH", result);
+        }
+    };
+
 
 
 
@@ -100,6 +108,7 @@ public class LoginActivity extends Activity implements MovesAccess{
         setContentView(R.layout.activity_profile);
         userName = (TextView) findViewById(R.id.user_name);
         loginBtn = (LoginButton) findViewById(R.id.fb_login_button);
+        loginBtn.setReadPermissions(Arrays.asList("user_friends"));
         loginBtn.setUserInfoChangedCallback(new UserInfoChangedCallback() {
             @Override
             public void onUserInfoFetched(GraphUser user) {
@@ -110,6 +119,7 @@ public class LoginActivity extends Activity implements MovesAccess{
                 }
             }
         });
+
 
         try { // if hash key doesn't work!
             PackageInfo info = getPackageManager().getPackageInfo(
@@ -133,11 +143,40 @@ public class LoginActivity extends Activity implements MovesAccess{
                          Exception exception) {
             if (state.isOpened()) {
                 Log.i("FacebookSampleActivity", "Facebook session opened");
+
+                my_session = session;
+                if(!userID.equals(""))
+                    requestFacebookFriends(session);
             } else if (state.isClosed()) {
                 Log.i("FacebookSampleActivity", "Facebook session closed");
             }
         }
     };
+
+    private void requestFacebookFriends(Session session) {
+        Log.i("HH", "JH");
+        new Request(
+                session,
+                "/me/friends",
+                null,
+                HttpMethod.GET,
+                new Request.Callback() {
+                    public void onCompleted(Response response) {
+                        Log.i("KK", response.toString());
+
+                        List<ValuePair> list = new ArrayList<ValuePair>();
+                        ValuePair pair1 = new ValuePair("user", userID);
+                        ValuePair pair2 = new ValuePair("json", response.toString());
+                        list.add(pair1);
+                        list.add(pair2);
+                        MakeHTTPRequest("POST2", URL_FRIENDS, list, listener);
+            /* handle the result */
+                    }
+                }
+        ).executeAsync();
+    }
+
+
 
     @Override
     public void onResume() {
@@ -195,7 +234,8 @@ public class LoginActivity extends Activity implements MovesAccess{
             accessToken = gson.fromJson(token, MovesAPI.MovesAccessToken.class);
 
             userID = accessToken.user_id;
-
+            if(my_session != null)
+                requestFacebookFriends(my_session);
             AlarmManager alarmManager=(AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
             Intent intent = new Intent(getApplicationContext(), AlarmReceiver.class);
             PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, intent, 0);
@@ -247,6 +287,39 @@ public class LoginActivity extends Activity implements MovesAccess{
             Toast.makeText(this, "Please install the Moves app", Toast.LENGTH_SHORT).show();
         }
     }
+
+
+    /**********************************************+
+     * Global HTTP Requests Functions
+     *********************************************/
+    public boolean isInternetConnected()
+    {
+        ConnectivityManager connMgr = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        if (networkInfo != null && networkInfo.isConnected())
+            return true;
+        else
+            return false;
+    }
+
+    public void MakeHTTPRequest(String METHOD, String url, List<ValuePair> param, HttpRequestResult listener)
+    {
+        HttpRequests new_request = new HttpRequests(listener);
+        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+
+        if (isInternetConnected())
+        {
+            if(METHOD.equals("POST2"))
+            {
+                new_request.MakeRequest(METHOD, url, param);
+            }
+        }
+        //Important!! After making the request, the listener automatically executes the HttpResults method.
+        else
+            Log.d("Error", "No network connection available.");
+    }
+
 
 
 
