@@ -173,36 +173,38 @@ public class StatusActivity extends Activity implements ServerAccess {
     public void doReceiveServer(String cmd, String token) {
         Log.d("Connect Status", "Received " + cmd + ": " + token);
 
-        if (token.length() > 0) {
-            Gson gson = new Gson();
-            List<Recommendation> recs = gson.fromJson(token, new TypeToken<ArrayList<Recommendation> >() {}.getType());
+        if (cmd.equalsIgnoreCase("move")) {
+            if (token.length() > 0) {
+                Gson gson = new Gson();
+                List<Recommendation> recs = gson.fromJson(token, new TypeToken<ArrayList<Recommendation>>() {
+                }.getType());
 
-            String message = "";
-            for (Recommendation rec : recs)
-            {
-                Log.d("Recommendations: ", "Spend time with " + rec.name + " at " + rec.time + " because " + rec.reason + ".");
-                message +=  "Spend time with " + rec.name + " at " + rec.time + " because " + rec.reason + ".\n";
+                String message = "";
+                for (Recommendation rec : recs) {
+                    Log.d("Recommendations: ", "Spend time with " + rec.name + " at " + rec.time + " because " + rec.reason + ".");
+                    message += "Spend time with " + rec.name + " at " + rec.time + " because " + rec.reason + ".\n";
 
-                NotificationCompat.BigTextStyle bigStyle = new NotificationCompat.BigTextStyle();
-                bigStyle.setBigContentTitle("Connect");
-                bigStyle.bigText("Spend time with " + rec.name + " at " + rec.time + " because " + rec.reason + ".");
+                    NotificationCompat.BigTextStyle bigStyle = new NotificationCompat.BigTextStyle();
+                    bigStyle.setBigContentTitle("Connect");
+                    bigStyle.bigText("Spend time with " + rec.name + " at " + rec.time + " because " + rec.reason + ".");
 
-                NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
-                mBuilder.setSmallIcon(R.drawable.ic_launcher);
-                mBuilder.setContentTitle("Connect");
-                mBuilder.setContentText(rec.name);
-                mBuilder.setStyle(bigStyle);
-                Notification note = mBuilder.build();
+                    NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
+                    mBuilder.setSmallIcon(R.drawable.ic_launcher);
+                    mBuilder.setContentTitle("Connect");
+                    mBuilder.setContentText(rec.name);
+                    mBuilder.setStyle(bigStyle);
+                    Notification note = mBuilder.build();
 
-                NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-                notificationManager.notify(1, note);
+                    NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                    notificationManager.notify(1, note);
+                }
+
+                if (message.equalsIgnoreCase(""))
+                    message = "No recommendations";
+
+                TextView view = (TextView) findViewById(R.id.application_status);
+                view.setText(message);
             }
-
-            if (message.equalsIgnoreCase(""))
-                message = "No recommendations";
-
-            TextView view = (TextView) findViewById(R.id.application_status);
-            view.setText(message);
         }
     }
 }
