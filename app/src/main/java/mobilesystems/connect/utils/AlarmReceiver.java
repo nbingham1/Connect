@@ -78,18 +78,19 @@ public class AlarmReceiver extends BroadcastReceiver
     {
         LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        if (location != null) {
+            double LATITUDE = location.getLatitude();
+            double LONGITUDE = location.getLongitude();
+            List<ValuePair> list = new ArrayList<ValuePair>();
+            ValuePair pair1 = new ValuePair("lat", LATITUDE + "");
+            ValuePair pair2 = new ValuePair("lon", LONGITUDE + "");
+            ValuePair pair3 = new ValuePair("user", LoginActivity.userID);
+            list.add(pair1);
+            list.add(pair2);
+            list.add(pair3);
 
-        double LATITUDE = location.getLatitude();
-        double LONGITUDE = location.getLongitude();
-        List<ValuePair> list = new ArrayList<ValuePair>();
-        ValuePair pair1 = new ValuePair("lat", LATITUDE+"");
-        ValuePair pair2 = new ValuePair("lon", LONGITUDE+"");
-        ValuePair pair3 = new ValuePair("user", LoginActivity.userID);
-        list.add(pair1);
-        list.add(pair2);
-        list.add(pair3);
-
-        MakeHTTPRequest("POST2", URL_LONGLAT, list, listener, context);
+            MakeHTTPRequest("POST2", URL_LONGLAT, list, listener, context);
+        }
     }
 
     /**********************************************+

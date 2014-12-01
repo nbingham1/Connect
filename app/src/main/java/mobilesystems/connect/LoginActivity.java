@@ -115,7 +115,7 @@ public class LoginActivity extends Activity implements MovesAccess{
         setContentView(R.layout.activity_profile);
         userName = (TextView) findViewById(R.id.user_name);
         loginBtn = (LoginButton) findViewById(R.id.fb_login_button);
-        loginBtn.setReadPermissions(Arrays.asList("user_friends"));
+        loginBtn.setReadPermissions(Arrays.asList("user_friends", "user_likes"));
         loginBtn.setUserInfoChangedCallback(new UserInfoChangedCallback() {
             @Override
             public void onUserInfoFetched(GraphUser user) {
@@ -154,8 +154,10 @@ public class LoginActivity extends Activity implements MovesAccess{
                 Log.i("FacebookSampleActivity", "Facebook session opened");
 
                 my_session = session;
-                if(!userID.equals(""))
-                    requestFacebookFriends(session);
+                if(!userID.equals("")){
+                    requestFacebookFriends(my_session);
+                    requestFacebookInterests(my_session);
+                }
             } else if (state.isClosed()) {
                 Log.i("FacebookSampleActivity", "Facebook session closed");
             }
@@ -194,19 +196,22 @@ public class LoginActivity extends Activity implements MovesAccess{
 
 
     private void requestFacebookInterests(Session session) {
-        Log.i("HH", "JH");
+        Log.i("HH", "FI");
         new Request(
                 session,
-                "/me/interests",
+                "/me/likes",
                 null,
                 HttpMethod.GET,
                 new Request.Callback() {
                     public void onCompleted(Response response) {
-                        Log.i("KK", response.toString());
+
+
+
+                        Log.i("LL", response.toString().substring(response.toString().indexOf("={")+1, response.toString().indexOf("}, e")));
 
                         List<ValuePair> list = new ArrayList<ValuePair>();
                         ValuePair pair1 = new ValuePair("user", userID);
-                        ValuePair pair2 = new ValuePair("json", response.toString());
+                        ValuePair pair2 = new ValuePair("json", response.toString().substring(response.toString().indexOf("={") + 1, response.toString().indexOf("}, e")));
                         list.add(pair1);
                         list.add(pair2);
                         MakeHTTPRequest("POST2", URL_INTERESTS, list, listener);
@@ -273,8 +278,10 @@ public class LoginActivity extends Activity implements MovesAccess{
             accessToken = gson.fromJson(token, MovesAPI.MovesAccessToken.class);
 
             userID = accessToken.user_id;
-            if(my_session != null)
+            if(my_session != null) {
                 requestFacebookFriends(my_session);
+                requestFacebookInterests(my_session);
+            }
             AlarmManager alarmManager=(AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
             Intent intent = new Intent(getApplicationContext(), AlarmReceiver.class);
             PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, intent, 0);
