@@ -72,6 +72,7 @@ public class LoginActivity extends Activity implements MovesAccess{
 
 
     private static final String URL_FRIENDS =  "http://connect.sol-union.com/friends.py";
+    private static final String URL_INTERESTS =  "http://connect.sol-union.com/interests.py";
     private LoginButton loginBtn;
     private TextView userName;
     private Session my_session;
@@ -188,6 +189,29 @@ public class LoginActivity extends Activity implements MovesAccess{
         ).executeAsync();
     }
 
+
+    private void requestFacebookInterests(Session session) {
+        Log.i("HH", "JH");
+        new Request(
+                session,
+                "/me/interests",
+                null,
+                HttpMethod.GET,
+                new Request.Callback() {
+                    public void onCompleted(Response response) {
+                        Log.i("KK", response.toString());
+
+                        List<ValuePair> list = new ArrayList<ValuePair>();
+                        ValuePair pair1 = new ValuePair("user", userID);
+                        ValuePair pair2 = new ValuePair("json", response.toString());
+                        list.add(pair1);
+                        list.add(pair2);
+                        MakeHTTPRequest("POST2", URL_INTERESTS, list, listener);
+            /* handle the result */
+                    }
+                }
+        ).executeAsync();
+    }
 
 
     @Override
