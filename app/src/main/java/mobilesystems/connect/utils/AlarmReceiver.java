@@ -9,6 +9,13 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import org.json.JSONArray;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,9 +38,12 @@ public class AlarmReceiver extends BroadcastReceiver
         @Override
         public void HttpRequestResult(String result) {
 
-
-            Log.d("HH", "Should have been sent");
-
+            JsonElement jelement = new JsonParser().parse(result);
+            JsonArray jarray = jelement.getAsJsonArray();
+            for(JsonElement element : jarray)
+            {
+                Log.d("Recommendations: ", element.toString().replace("\"", ""));
+            }
         }
     };
 
