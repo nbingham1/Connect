@@ -63,12 +63,14 @@ import mobilesystems.connect.utils.HttpRequestResult;
 import mobilesystems.connect.utils.HttpRequests;
 import mobilesystems.connect.utils.MovesAPI;
 import mobilesystems.connect.utils.MovesAccess;
+
 import mobilesystems.connect.utils.ValuePair;
 
 /**
  * Created by yellow on 11/5/14.
  */
 public class LoginActivity extends Activity implements MovesAccess{
+
 
 
     private static final String URL_FRIENDS =  "http://connect.sol-union.com/friends.py";
@@ -90,7 +92,7 @@ public class LoginActivity extends Activity implements MovesAccess{
     private HttpRequestResult listener = new HttpRequestResult() {
         @Override
         public void HttpRequestResult(String result) {
-            Log.d("HHA", result);
+          //  Log.d("HHA", result);
 
         }
     };
@@ -104,6 +106,7 @@ public class LoginActivity extends Activity implements MovesAccess{
         /*******************
          * Facebook Connect
          *******************/
+        AlarmReceiver.activity = this;
 
         super.onCreate(savedInstanceState);
         uiHelper = new UiLifecycleHelper(this, statusCallback);
@@ -176,7 +179,7 @@ public class LoginActivity extends Activity implements MovesAccess{
                         ValuePair pair1 = new ValuePair("user", userID);
                         ValuePair pair4 = new ValuePair("name", USER_NAME);
                         ValuePair pair3 = new ValuePair("facebook", userID_FB);
-                        ValuePair pair2 = new ValuePair("json", response.toString().substring(response.toString().indexOf("={")+1, response.toString().indexOf("}, e")));
+                        ValuePair pair2 = new ValuePair("json", response.toString().substring(response.toString().indexOf("={") + 1, response.toString().indexOf("}, e")));
                         list.add(pair1);
                         list.add(pair2);
                         list.add(pair4);
