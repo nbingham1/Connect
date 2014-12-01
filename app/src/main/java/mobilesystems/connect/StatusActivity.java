@@ -1,6 +1,8 @@
 package mobilesystems.connect;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -12,10 +14,12 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.RemoteViews;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,6 +38,10 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class StatusActivity extends Activity implements ServerAccess {
 
@@ -43,6 +51,15 @@ public class StatusActivity extends Activity implements ServerAccess {
     TextView appStatus = null;
     BackgroundLocationService serve;
     Intent locationIntent = null;
+
+    public static class Recommendation
+    {
+        Recommendation() {}
+
+        public String name;
+        public String time;
+        public String reason;
+    }
 
     private ServiceConnection mConnection = new ServiceConnection() {
 
@@ -157,19 +174,31 @@ public class StatusActivity extends Activity implements ServerAccess {
         Log.d("Connect Status", "Received " + cmd + ": " + token);
 
         if (token.length() > 0) {
-            JsonElement jelement = new JsonParser().parse(token);
-            JsonArray jarray = jelement.getAsJsonArray();
+            Gson gson = new Gson();
+            List<Recommendation> recs = gson.fromJson(token, new TypeToken<ArrayList<Recommendation> >() {}.getType());
 
-            boolean recommendation_found = false;
             String message = "";
-            for(JsonElement element : jarray)
+            for (Recommendation rec : recs)
             {
-                recommendation_found = true;
-                Log.d("Recommendations: ", element.toString().replace("\"", ""));
-                message +=  element.toString().replace("\"", "")+"\n";
+                Log.d("Recommendations: ", "Spend time with " + rec.name + " at " + rec.time + " because " + rec.reason + ".");
+                message +=  "Spend time with " + rec.name + " at " + rec.time + " because " + rec.reason + ".\n";
+
+                NotificationCompat.BigTextStyle bigStyle = new NotificationCompat.BigTextStyle();
+                bigStyle.setBigContentTitle("Connect");
+                bigStyle.bigText("Spend time with " + rec.name + " at " + rec.time + " because " + rec.reason + ".");
+
+                NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
+                mBuilder.setSmallIcon(R.drawable.ic_launcher);
+                mBuilder.setContentTitle("Connect");
+                mBuilder.setContentText(rec.name);
+                mBuilder.setStyle(bigStyle);
+                Notification note = mBuilder.build();
+
+                NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                notificationManager.notify(1, note);
             }
 
-            if(!recommendation_found)
+            if (message.equalsIgnoreCase(""))
                 message = "No recommendations";
 
             TextView view = (TextView) findViewById(R.id.application_status);
