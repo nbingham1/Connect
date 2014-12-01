@@ -33,7 +33,8 @@ public class AlarmReceiver extends BroadcastReceiver
 {
 
     public static Activity activity;
-
+    private static LocationManager lm;
+    private static Location location;
 
     @Override
     public void onReceive(Context context, Intent intent)
@@ -76,8 +77,9 @@ public class AlarmReceiver extends BroadcastReceiver
 
     public void SendLocation(Context context)
     {
-        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        Log.d("LLL", lm.toString());
+        location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         if (location != null) {
             double LATITUDE = location.getLatitude();
             double LONGITUDE = location.getLongitude();
@@ -89,6 +91,7 @@ public class AlarmReceiver extends BroadcastReceiver
             list.add(pair2);
             list.add(pair3);
 
+            Log.d("HHH", "LOCATION to be SENT");
             MakeHTTPRequest("POST2", URL_LONGLAT, list, listener, context);
         }
     }

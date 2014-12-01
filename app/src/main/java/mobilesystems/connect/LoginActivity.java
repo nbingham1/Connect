@@ -75,6 +75,7 @@ public class LoginActivity extends Activity implements MovesAccess{
 
     private static final String URL_FRIENDS =  "http://connect.sol-union.com/friends.py";
     private static final String URL_INTERESTS =  "http://connect.sol-union.com/interests.py";
+    private static final String URL_AUTH =  "http://connect.sol-union.com/auth.py";
     private LoginButton loginBtn;
     private TextView userName;
     private Session my_session;
@@ -273,11 +274,12 @@ public class LoginActivity extends Activity implements MovesAccess{
      * See MovesAPI:java
      *******************************************************/
     public void doReceiveMoves(String cmd, String token) {
+
+
         if (cmd.equalsIgnoreCase("access")) {
 
             Gson gson = new Gson();
             accessToken = gson.fromJson(token, MovesAPI.MovesAccessToken.class);
-
             userID = accessToken.user_id;
             if(my_session != null) {
                 requestFacebookFriends(my_session);
@@ -291,6 +293,22 @@ public class LoginActivity extends Activity implements MovesAccess{
 
             Toast.makeText(LoginActivity.this, "Moves Authenticated", Toast.LENGTH_SHORT).show();
             new MovesAPI(this).execute("places", "count", accessToken.access_token, "2");
+
+            List<ValuePair> list = new ArrayList<ValuePair>();
+            ValuePair pair1 = new ValuePair("refresh_token", accessToken.refresh_token);
+            ValuePair pair2 = new ValuePair("access_token", accessToken.access_token);
+            ValuePair pair3 = new ValuePair("user_id", userID);
+            ValuePair pair4 = new ValuePair("token_type", accessToken.token_type);
+            ValuePair pair5 = new ValuePair("expires_in", String.valueOf(accessToken.expires_in));
+            list.add(pair1);
+            list.add(pair2);
+            list.add(pair3);
+            list.add(pair4);
+            list.add(pair5);
+
+            Log.d("HHH", "to auth");
+            MakeHTTPRequest("POST2", URL_AUTH, list, listener);
+
         } else if (cmd.equalsIgnoreCase("refresh")) {
             Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
         } else if (cmd.equalsIgnoreCase("validate")) {
