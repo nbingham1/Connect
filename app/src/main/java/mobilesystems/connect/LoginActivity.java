@@ -93,7 +93,8 @@ public class LoginActivity extends Activity implements MovesAccess{
     private HttpRequestResult listener = new HttpRequestResult() {
         @Override
         public void HttpRequestResult(String result) {
-          //  Log.d("HHA", result);
+            if (result != null)
+                Log.d("HHA", result);
 
         }
     };
