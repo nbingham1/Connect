@@ -1,9 +1,12 @@
 package mobilesystems.connect.utils;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.SystemClock;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
@@ -18,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 
 import mobilesystems.connect.LoginActivity;
@@ -28,9 +32,9 @@ import mobilesystems.connect.LoginActivity;
 public class MovesAPI extends AsyncTask<String, Void, String> {
 
     //Acces token received from Moves API
-    public static class MovesAccessToken {
-
-        MovesAccessToken() {}
+    public static class MovesAuth
+    {
+        MovesAuth() {}
 
         public String access_token;
         public String token_type;
@@ -39,44 +43,32 @@ public class MovesAPI extends AsyncTask<String, Void, String> {
         public String user_id;
     }
 
-    public static final String TAG = "Connect";
     public static final String CLIENT_ID = "BHJJXLewp3VFBhgOY1T7NVlyXGsOtMF1";
-    public static final String REDIRECT_URI = "http://connect.sol-union.com/auth.py";
+    public static final String URL_REDIRECT = "http://connect.sol-union.com/auth.py";
+    public static final String URL_AUTH =  "https://api.moves-app.com/oauth/v1";
+    public static final String URL_API =  "https://api.moves-app.com/api/1.1";
 
     private MovesAccess activity;
-
-
     //Command user requested
-    String cmd = "";
+    private String cmd;
 
     public MovesAPI(MovesAccess activity)
     {
+        this.cmd = "";
         this.activity = activity;
     }
 
-
-    public void Connect(MovesAccess activity)
+    protected String doInBackground(String... cmds)
     {
-        Uri uri = new Uri.Builder()
-                .scheme("moves")
-                .authority("app")
-                .path("/authorize")
-                .appendQueryParameter("client_id", CLIENT_ID)
-                .appendQueryParameter("redirect_uri", REDIRECT_URI)
-                .appendQueryParameter("scope", "location activity")
-                .appendQueryParameter("state", String.valueOf(SystemClock.uptimeMillis())).build();
-    }
-    protected String doInBackground(String... cmds) {
-
         cmd = cmds[0];
 
-        String url = "https://api.moves-app.com/api/1.1";
+        String url = URL_API;
         if (cmds[0].equalsIgnoreCase("access")) {
             url = cmds[1];
         } else if (cmds[0].equalsIgnoreCase("refresh")) {
-            url = REDIRECT_URI + "?refresh_token=" + cmds[1];
+            url = URL_REDIRECT + "?refresh_token=" + cmds[1];
         } else if (cmds[0].equalsIgnoreCase("validate")) {
-            url = "https://api.moves-app.com/oauth/v1/tokeninfo?access_token=" + cmds[1];
+            url = URL_AUTH + "/tokeninfo?access_token=" + cmds[1];
         } else if (cmds[0].equalsIgnoreCase("profile")) {
             url += "/user/profile?access_token=" + cmds[1];
         } else if (cmds[0].equalsIgnoreCase("support")) {
@@ -124,8 +116,8 @@ public class MovesAPI extends AsyncTask<String, Void, String> {
     }
 
     @Override
-    protected void onPostExecute(String result) {
-
+    protected void onPostExecute(String result)
+    {
         activity.doReceiveMoves(cmd, result);
     }
 }
