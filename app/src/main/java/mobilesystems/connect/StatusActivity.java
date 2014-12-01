@@ -124,6 +124,10 @@ public class StatusActivity extends Activity implements ServerAccess {
         switch (item.getItemId()) {
             case R.id.action_settings:
                 Intent intent = new Intent(this, LoginActivity.class);
+                if (movesAuth != null) {
+                    Gson gson = new Gson();
+                    intent.putExtra("movesAuth", gson.toJson(movesAuth));
+                }
                 startActivityForResult(intent, LOGIN_ACTIVITY);
                 return true;
             default:

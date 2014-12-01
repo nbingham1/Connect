@@ -67,11 +67,15 @@ public class LoginActivity extends ActionBarActivity implements MovesAccess,Serv
 
     MovesAPI.MovesAuth movesAuth = null;
 
+    Intent callingIntent = null;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         /*******************
          * Facebook Connect
          *******************/
+
+        callingIntent = getIntent();
 
         super.onCreate(savedInstanceState);
         uiHelper = new UiLifecycleHelper(this, statusCallback);
@@ -94,7 +98,12 @@ public class LoginActivity extends ActionBarActivity implements MovesAccess,Serv
         });
 
         movesStatus = (TextView) findViewById(R.id.moves_status);
-        movesStatus.setText("Moves not connected.");
+        if (callingIntent.hasExtra("movesAuth")) {
+            Gson gson = new Gson();
+            movesAuth = gson.fromJson(callingIntent.getStringExtra("movesAuth"), MovesAPI.MovesAuth.class);
+            movesStatus.setText("Moves Authenticated");
+        } else
+            movesStatus.setText("Moves not connected.");
 
 
         /*try { // if hash key doesn't work!
@@ -265,25 +274,6 @@ public class LoginActivity extends ActionBarActivity implements MovesAccess,Serv
      * See MovesAPI:java
      *******************************************************/
     public void doReceiveServer(String cmd, String token) {
-        /*Boolean hh = false;
-        String test = "";
-        Log.d("WTF", token);
-        JsonElement jelement = new JsonParser().parse(token);
-        JsonArray jarray = jelement.getAsJsonArray();
-        for(JsonElement element : jarray)
-        {
-            hh = true;
-            Log.d("Recommendations: ", element.toString().replace("\"", ""));
-            test +=  element.toString().replace("\"", "")+"\n";
-        }
-
-        if(!hh)
-        {
-            test = "No recommendations";
-        }
-        TextView view = (TextView) activity.findViewById(R.id.rec);
-        view.setText(test);*/
-        Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
     }
 
     /***************************************
