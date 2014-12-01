@@ -82,14 +82,6 @@ public class StatusActivity extends Activity implements ServerAccess {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mReceiver = new LocationReceiver(this);
-        IntentFilter intentFilter = new IntentFilter("com.Connect.StatusActivity$LocationListener");
-        registerReceiver(mReceiver, intentFilter);
-
-        locationIntent = new Intent(this, BackgroundLocationService.class);
-        bindService(locationIntent, mConnection, Context.BIND_AUTO_CREATE);
-        startService(locationIntent);
-
         appStatus = (TextView) findViewById(R.id.application_status);
         setContentView(R.layout.activity_status);
     }
@@ -143,6 +135,16 @@ public class StatusActivity extends Activity implements ServerAccess {
                 Gson gson = new Gson();
                 if (data.hasExtra("movesAuth"))
                     movesAuth = gson.fromJson(data.getStringExtra("movesAuth"), MovesAPI.MovesAuth.class);
+
+                if (movesAuth != null && mReceiver == null && locationIntent == null) {
+                    mReceiver = new LocationReceiver(this);
+                    IntentFilter intentFilter = new IntentFilter("com.Connect.StatusActivity$LocationListener");
+                    registerReceiver(mReceiver, intentFilter);
+
+                    locationIntent = new Intent(this, BackgroundLocationService.class);
+                    bindService(locationIntent, mConnection, Context.BIND_AUTO_CREATE);
+                    startService(locationIntent);
+                }
             }
         }
     }
