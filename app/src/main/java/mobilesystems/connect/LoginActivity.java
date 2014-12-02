@@ -244,9 +244,8 @@ public class LoginActivity extends ActionBarActivity implements MovesAccess,Serv
 
             movesStatus.setText("Moves Authenticated");
 
-
-
-            (new ServerAPI(this)).execute("auth", movesAuth.access_token);
+            if (movesAuth != null)
+                (new ServerAPI(this)).execute("auth", movesAuth.access_token);
 
         } else if (cmd.equalsIgnoreCase("refresh")) {
             Toast.makeText(LoginActivity.this, token, Toast.LENGTH_LONG).show();
@@ -319,7 +318,8 @@ public class LoginActivity extends ActionBarActivity implements MovesAccess,Serv
                 if (facebookUserName != null)
                     resultIntent.putExtra("facebookUserName", facebookUserName);
 
-                Log.d("ConnectLogin", resultIntent.getExtras().toString());
+                if (resultIntent != null && resultIntent.getExtras() != null)
+                    Log.d("ConnectLogin", resultIntent.getExtras().toString());
 
                 setResult(RESULT_OK, resultIntent);
                 finish();
