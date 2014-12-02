@@ -94,13 +94,37 @@ public class StatusActivity extends Activity implements ServerAccess {
     }
 
     LocationReceiver mReceiver = null;
+    SharedPreferences prefs = null;
+    SharedPreferences.Editor editor = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        prefs = getPreferences(Context.MODE_PRIVATE);
+        editor = prefs.edit();
+
         appStatus = (TextView) findViewById(R.id.application_status);
         setContentView(R.layout.activity_status);
+    }
+
+    @Override
+    protected void onResume() {
+        String auth = prefs.getString("movesAuth", null);
+        if (auth != null)
+            movesAuth = new Gson().fromJson(auth, MovesAPI.MovesAuth.class);
+
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        if (movesAuth != null) {
+            editor.putString("movesAuth", new Gson().toJson(movesAuth));
+            editor.commit();
+        }
+
+        super.onPause();
     }
 
     @Override
@@ -150,8 +174,9 @@ public class StatusActivity extends Activity implements ServerAccess {
         if (requestCode == LOGIN_ACTIVITY) {
             if (resultCode == RESULT_OK) {
                 Gson gson = new Gson();
-                if (data.hasExtra("movesAuth"))
+                if (data.hasExtra("movesAuth")) {
                     movesAuth = gson.fromJson(data.getStringExtra("movesAuth"), MovesAPI.MovesAuth.class);
+                }
 
                 if (movesAuth != null && mReceiver == null && locationIntent == null) {
                     mReceiver = new LocationReceiver(this);
