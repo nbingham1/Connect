@@ -59,7 +59,7 @@ public class ServerAPI extends AsyncTask<String, Void, String> {
         else if (cmds[0].equalsIgnoreCase("move"))
         {
             url = URL_MOVE + "?user=" + cmds[1];
-            parameters.add(new BasicNameValuePair("user", cmds[1]));
+//            parameters.add(new BasicNameValuePair("user", cmds[1]));
             if (cmds.length >= 4) {
                 parameters.add(new BasicNameValuePair("lat", cmds[2]));
                 parameters.add(new BasicNameValuePair("lon", cmds[3]));
@@ -69,8 +69,8 @@ public class ServerAPI extends AsyncTask<String, Void, String> {
         {
             url = URL_FRIENDS;
             parameters.add(new BasicNameValuePair("user", cmds[1]));
-            parameters.add(new BasicNameValuePair("facebook", cmds[2]));
-            parameters.add(new BasicNameValuePair("name", cmds[3]));
+            parameters.add(new BasicNameValuePair("name", cmds[2]));
+            parameters.add(new BasicNameValuePair("facebook", cmds[3]));
             parameters.add(new BasicNameValuePair("json", cmds[4]));
         }
         else if (cmds[0].equalsIgnoreCase("interests"))
@@ -102,6 +102,7 @@ public class ServerAPI extends AsyncTask<String, Void, String> {
                     builder.append(line);
                     Log.d("Connect ServerAPI", line);
                 }
+//                Log.i("Result", builder.toString());
                 return builder.toString();
             } else
                 Log.e("ServerAPI", "HTTP failed with status code " + Integer.toString(statusCode));
