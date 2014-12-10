@@ -236,8 +236,6 @@ public class LoginActivity extends ActionBarActivity implements MovesAccess,Serv
                         }
 
 //                        Log.i("LL", response.toString().substring(response.toString().indexOf("={")+1, response.toString().indexOf("}, e")));
-
-                        Log.i(facebookUserName, facebookUserID);
                         new ServerAPI(LoginActivity.this).execute("interests", movesUserID, resultStr);
                     }
                 }

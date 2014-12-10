@@ -102,7 +102,6 @@ public class ServerAPI extends AsyncTask<String, Void, String> {
                     builder.append(line);
                     Log.d("Connect ServerAPI", line);
                 }
-                Log.i("result", builder.toString());
                 return builder.toString();
             } else
                 Log.e("ServerAPI", "HTTP failed with status code " + Integer.toString(statusCode));
