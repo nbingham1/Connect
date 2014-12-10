@@ -47,38 +47,38 @@ public class ServerAPI extends AsyncTask<String, Void, String> {
 
         if (cmds[0].equalsIgnoreCase("auth")) {
             url = URL_AUTH;
-            parameters.add(new BasicNameValuePair(cmds[1], "code"));
+            parameters.add(new BasicNameValuePair("code", cmds[1]));
         } else if (cmds[0].equalsIgnoreCase("refresh")) {
             url = URL_AUTH;
-            parameters.add(new BasicNameValuePair(cmds[1], "refresh_token"));
+            parameters.add(new BasicNameValuePair("refresh_token", cmds[1]));
         }
         else if (cmds[0].equalsIgnoreCase("update")) {
             url = URL_UPDATE;
-            parameters.add(new BasicNameValuePair(cmds[1], "user"));
+            parameters.add(new BasicNameValuePair("user", cmds[1]));
         }
         else if (cmds[0].equalsIgnoreCase("move"))
         {
             url = URL_MOVE + "?user=" + cmds[1];
-            parameters.add(new BasicNameValuePair(cmds[1], "user"));
+            parameters.add(new BasicNameValuePair("user", cmds[1]));
             if (cmds.length >= 4) {
-                parameters.add(new BasicNameValuePair(cmds[2], "lat"));
-                parameters.add(new BasicNameValuePair(cmds[3], "lon"));
+                parameters.add(new BasicNameValuePair("lat", cmds[2]));
+                parameters.add(new BasicNameValuePair("lon", cmds[3]));
             }
         }
         else if (cmds[0].equalsIgnoreCase("friends"))
         {
             url = URL_FRIENDS;
-            parameters.add(new BasicNameValuePair(cmds[1], "user"));
-            parameters.add(new BasicNameValuePair(cmds[2], "facebook"));
-            parameters.add(new BasicNameValuePair(cmds[3], "name"));
-            parameters.add(new BasicNameValuePair(cmds[4], "json"));
+            parameters.add(new BasicNameValuePair("user", cmds[1]));
+            parameters.add(new BasicNameValuePair("facebook", cmds[2]));
+            parameters.add(new BasicNameValuePair("name", cmds[3]));
+            parameters.add(new BasicNameValuePair("json", cmds[4]));
         }
         else if (cmds[0].equalsIgnoreCase("interests"))
         {
 //            return null;
             url = URL_INTERESTS;
-            parameters.add(new BasicNameValuePair(cmds[1], "user"));
-            parameters.add(new BasicNameValuePair(cmds[2], "json"));
+            parameters.add(new BasicNameValuePair("user", cmds[1]));
+            parameters.add(new BasicNameValuePair("json", cmds[2]));
         }
 
         DefaultHttpClient httpClient = new DefaultHttpClient();
