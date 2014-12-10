@@ -29,15 +29,23 @@ import com.facebook.Response;
 import com.facebook.Session;
 import com.facebook.SessionState;
 import com.facebook.UiLifecycleHelper;
+import com.facebook.android.Facebook;
 import com.facebook.model.GraphUser;
 import com.facebook.widget.LoginButton;
 import com.facebook.widget.LoginButton.UserInfoChangedCallback;
 import com.google.gson.Gson;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 
 import mobilesystems.connect.utils.MovesAPI;
 import mobilesystems.connect.utils.MovesAccess;
@@ -151,9 +159,21 @@ public class LoginActivity extends ActionBarActivity implements MovesAccess,Serv
                 HttpMethod.GET,
                 new Request.Callback() {
                     public void onCompleted(Response response) {
-                        Log.i("KK", response.toString().substring(response.toString().indexOf("={")+1, response.toString().indexOf("}, e")));
+//                        Log.i("KK", response.toString().substring(response.toString().indexOf("={")+1, response.toString().indexOf("}, e")));
+                        String resultStr = "{\"data\":[";
+                        try {
+                            JSONObject _data = new JSONObject(response.toString().substring(response.toString().indexOf("={")+1, response.toString().indexOf("}, e")));
+                            JSONArray _friends = _data.getJSONArray("data");
+                            for(int i=0; i<_friends.length(); i++) {
+                                resultStr = resultStr+"{\"id\":\""+_friends.getJSONObject(i).getString("id")+"\",\"name\":\""+_friends.getJSONObject(i).getString("name")+"\"}";
+                                if(i!=_friends.length()-1) resultStr=resultStr+",";
+                            }
+                            resultStr = resultStr+"]}";
 
-                        new ServerAPI(LoginActivity.this).execute("friends", movesUserID, facebookUserName, facebookUserID, response.toString().substring(response.toString().indexOf("={") + 1, response.toString().indexOf("}, e")));
+                        } catch (Exception e) {
+                            Log.i("parse JSON from FB", e.getLocalizedMessage());
+                        }
+                        new ServerAPI(LoginActivity.this).execute("friends", movesUserID, facebookUserName, facebookUserID, resultStr);
                     }
                 }
         ).executeAsync();
@@ -168,9 +188,57 @@ public class LoginActivity extends ActionBarActivity implements MovesAccess,Serv
                 HttpMethod.GET,
                 new Request.Callback() {
                     public void onCompleted(Response response) {
-                        Log.i("LL", response.toString().substring(response.toString().indexOf("={")+1, response.toString().indexOf("}, e")));
 
-                        new ServerAPI(LoginActivity.this).execute("interests", movesUserID, response.toString().substring(response.toString().indexOf("={") + 1, response.toString().indexOf("}, e")));
+                        String resultStr = "{\"data\":[";
+                        HashMap<String, Integer> _interests = new HashMap<String, Integer>();
+                        try {
+
+                            String delims = "[ .,?!/&]+";
+                            JSONObject _data = new JSONObject(response.toString().substring(response.toString().indexOf("={")+1, response.toString().indexOf("}, e")));
+                            JSONArray _likes = _data.getJSONArray("data");
+                            for(int i=0; i<_likes.length(); i++) {
+                                Vector<String> tempInterests = new Vector<String>();
+                                JSONObject tempPage = _likes.getJSONObject(i);
+                                if(tempPage.has("category_list")){
+                                    JSONArray _categList = tempPage.getJSONArray("category_list");
+                                    for(int j=0; j<_categList.length(); j++) {
+                                        String[] tokens = _categList.getJSONObject(j).getString("name").split(delims);
+                                        for(int k=0; k<tokens.length; k++) {
+                                            if(tempInterests.contains(tokens[k]));
+                                            else tempInterests.add(tokens[k]);
+                                        }
+                                    }
+                                }
+                                String[] tokens = tempPage.getString("category").split(delims);
+                                for(int k=0; k<tokens.length; k++) {
+                                    if(tempInterests.contains(tokens[k]));
+                                    else tempInterests.add(tokens[k]);
+                                }
+                                for(int x=0; x<tempInterests.size(); x++){
+                                    if(_interests.containsKey(tempInterests.get(x))) {
+                                        _interests.put(tempInterests.get(x), _interests.get(tempInterests.get(x))+1);
+                                    }
+                                    else _interests.put(tempInterests.get(x), 1);
+                                }
+                            }
+                            Iterator it = _interests.entrySet().iterator();
+                            while (it.hasNext()) {
+                                Map.Entry pairs = (Map.Entry)it.next();
+                                resultStr  = resultStr+"{\""+pairs.getKey()+"\":\""+pairs.getValue().toString()+"\"}";
+                                it.remove();
+                                if(it.hasNext()) resultStr =  resultStr+",";
+                                else resultStr = resultStr+"]}";
+                            }
+                            Log.i("JSON:", resultStr);
+
+                        } catch (Exception e) {
+                            Log.i("parse JSON from FB", e.getLocalizedMessage());
+                        }
+
+//                        Log.i("LL", response.toString().substring(response.toString().indexOf("={")+1, response.toString().indexOf("}, e")));
+
+                        Log.i(facebookUserName, facebookUserID);
+                        new ServerAPI(LoginActivity.this).execute("interests", movesUserID, resultStr);
                     }
                 }
         ).executeAsync();

@@ -75,7 +75,10 @@ public class ServerAPI extends AsyncTask<String, Void, String> {
         }
         else if (cmds[0].equalsIgnoreCase("interests"))
         {
-            return null;
+//            return null;
+            url = URL_INTERESTS;
+            parameters.add(new BasicNameValuePair(cmds[1], "user"));
+            parameters.add(new BasicNameValuePair(cmds[2], "json"));
         }
 
         DefaultHttpClient httpClient = new DefaultHttpClient();
@@ -85,8 +88,10 @@ public class ServerAPI extends AsyncTask<String, Void, String> {
         try {
             httpPost.setEntity(new UrlEncodedFormEntity(parameters));
             HttpResponse response = httpClient.execute(httpPost);
+
             StatusLine statusLine = response.getStatusLine();
             int statusCode = statusLine.getStatusCode();
+
             if (statusCode == 200) {
                 HttpEntity entity = response.getEntity();
                 InputStream content = entity.getContent();
@@ -97,6 +102,7 @@ public class ServerAPI extends AsyncTask<String, Void, String> {
                     builder.append(line);
                     Log.d("Connect ServerAPI", line);
                 }
+                Log.i("result", builder.toString());
                 return builder.toString();
             } else
                 Log.e("ServerAPI", "HTTP failed with status code " + Integer.toString(statusCode));
@@ -116,4 +122,5 @@ public class ServerAPI extends AsyncTask<String, Void, String> {
     {
         activity.doReceiveServer(cmd, result);
     }
+
 }
